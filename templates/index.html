@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sleep Quality Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        #loadingBox { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <div class="glass-card">
+        <!-- Header -->
+        <div class="dashboard-header fade-in">
+            <div>
+                <h1 class="title-box" style="margin-bottom: 10px;">🌙 Sleep Quality Analyzer</h1>
+                <p class="welcome-text">Welcome back, <strong>{{ user }}</strong>!</p>
+            </div>
+            <a href="/logout" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card fade-in stagger-1">
+                <div class="icon">📊</div>
+                <div class="value">{{ records_count if records_count else 0 }}</div>
+                <div class="label">Total Records</div>
+            </div>
+            <div class="stat-card fade-in stagger-2">
+                <div class="icon">⭐</div>
+                <div class="value">{{ avg_score if avg_score else 0 }}</div>
+                <div class="label">Average Score</div>
+            </div>
+            <div class="stat-card fade-in stagger-3">
+                <div class="icon">🔥</div>
+                <div class="value">{{ current_streak if current_streak else 0 }}</div>
+                <div class="label">Day Streak</div>
+            </div>
+            <div class="stat-card fade-in stagger-4">
+                <div class="icon">🏆</div>
+                <div class="value">{{ best_score if best_score else 0 }}</div>
+                <div class="label">Best Score</div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions-grid">
+            {% if report %}
+            <div class="action-card" data-bs-toggle="modal" data-bs-target="#reportModal">
+                <span class="icon">📊</span>
+                <span class="label">View Report</span>
+            </div>
+            {% endif %}
+            <div class="action-card" data-bs-toggle="modal" data-bs-target="#analyzerModal">
+                <span class="icon">✨</span>
+                <span class="label">New Analysis</span>
+            </div>
+            <div class="action-card" onclick="window.location.href='/dashboard'">
+                <span class="icon">📈</span>
+                <span class="label">History</span>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingBox">
+            <div class="spinner"></div>
+            <h5>Analyzing your sleep...</h5>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger mt-3">{{ error }}</div>
+        {% endif %}
+
+        <!-- Recent Records -->
+        {% if recent_records and recent_records|length > 0 %}
+        <div class="records-section fade-in">
+            <h3><i class="fas fa-history"></i> Recent Sleep Records</h3>
+            {% for record in recent_records[:5] %}
+            <div class="record-item">
+                <span class="record-date">
+                    <i class="fas fa-calendar-alt"></i> {{ record.date }}
+                </span>
+                <div class="record-score">
+                    <span class="score-badge {% if record.score >= 80 %}excellent{% elif record.score >= 60 %}good{% elif record.score >= 40 %}fair{% else %}poor{% endif %}">
+                        {{ record.score }}/100
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+            {% if records_count and records_count > 5 %}
+            <div class="text-center mt-3">
+                <a href="/dashboard" class="btn-3d small">View All Records</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Chart Section -->
+        {% if dates and dates|length > 0 %}
+        <div class="chart-section fade-in">
+            <h3><i class="fas fa-chart-line"></i> Sleep Score Trend</h3>
+            <canvas id="sleepChart" height="100"></canvas>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ANALYZER MODAL -->
+<div class="modal fade" id="analyzerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="title-box w-100" style="margin-bottom: 0;">
+                    <i class="fas fa-moon"></i> Sleep Analyzer
+                </div>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST">
+                    <!-- Sleep Behavior -->
+                    <div class="input-section">
+                        <h5><i class="fas fa-bed"></i> Sleep Behavior</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Sleep Duration (hours)</label>
+                                    <input class="form-control" type="number" step="0.1" min="0" max="24" name="duration" placeholder="0-24" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Stress Level</label>
+                                    <input class="form-control" type="number" min="0" max="10" name="stress" placeholder="0-10" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Physical Activity (minutes/day)</label>
+                            <input class="form-control" type="number" min="0" max="300" name="activity" placeholder="0-300" required>
+                        </div>
+                    </div>
+
+                    <!-- SpO2 Level -->
+                    <div class="input-section">
+                        <h5><i class="fas fa-wind"></i> SpO₂ Level</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">SpO₂ Before Sleep (%)</label>
+                                    <input class="form-control" type="number" min="70" max="100" name="spo2_before" placeholder="70-100" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">SpO₂ After Sleep (%)</label>
+                                    <input class="form-control" type="number" min="70" max="100" name="spo2_after" placeholder="70-100" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Heart Rate -->
+                    <div class="input-section">
+                        <h5><i class="fas fa-heartbeat"></i> Heart Rate</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Heart Rate Before Sleep (bpm)</label>
+                                    <input class="form-control" type="number" min="40" max="180" name="hr_before" placeholder="40-180" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Heart Rate After Sleep (bpm)</label>
+                                    <input class="form-control" type="number" min="40" max="180" name="hr_after" placeholder="40-180" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lifestyle -->
+                    <div class="input-section">
+                        <h5><i class="fas fa-coffee"></i> Lifestyle</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Caffeine Intake (cups/day)</label>
+                                    <input class="form-control" type="number" min="0" max="7" step="0.5" name="caffeine" placeholder="0-7" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Screen Time (hours/day)</label>
+                                    <input class="form-control" type="number" min="0.5" max="10" step="0.5" name="screen" placeholder="0.5-10" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn-3d" onclick="showLoading()">
+                            <i class="fas fa-search"></i> Analyze Sleep
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- REPORT MODAL -->
+{% if report %}
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="title-box w-100" style="margin-bottom: 0;">
+                    <i class="fas fa-file-alt"></i> Sleep Analysis Report
+                </div>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="report-grid">
+                    <div>
+                        <div class="score-display">
+                            <div class="score-value" id="scoreText">{{ report.score }}</div>
+                            <div class="score-label">Sleep Score</div>
+                            <span class="quality-badge" id="qualityBadge">{{ report.quality }}</span>
+                        </div>
+                        <div class="recommendations">
+                            <h5><i class="fas fa-lightbulb"></i> Recommendations</h5>
+                            <ul>
+                                {% for rec in report.recommendations %}
+                                <li>{{ rec }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <canvas id="scoreGauge"></canvas>
+                    </div>
+                </div>
+
+                <hr style="margin: 30px 0;">
+
+                <div class="title-box" style="margin-bottom: 20px;">
+                    <i class="fas fa-chart-line"></i> Sleep Score Trend
+                </div>
+                <div class="chart-container" style="margin: 0;">
+                    <canvas id="sleepChartModal"></canvas>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="/download_report" class="btn-3d success">
+                        <i class="fas fa-download"></i> Download PDF Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Font Awesome -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+
+<script>
+function showLoading() {
+    document.getElementById("loadingBox").style.display = "block";
+}
+
+// Score Gauge
+var score = {{ report.score if report else 0 }};
+
+if(score > 0){
+    var color = "#10b981";
+    var quality = "{{ report.quality if report else '' }}";
+
+    if(score < 40) { color = "#ef4444"; }
+    else if(score < 70) { color = "#f59e0b"; }
+
+    new Chart(document.getElementById("scoreGauge"),{
+        type:"doughnut",
+        data:{
+            datasets:[{
+                data:[score, 100 - score],
+                backgroundColor:[color, "#e2e8f0"],
+                borderWidth:0
+            }]
+        },
+        options:{
+            cutout:"75%",
+            plugins:{legend:{display:false}},
+            responsive:true
+        }
+    });
+
+    document.getElementById("scoreText").style.color = color;
+    document.getElementById("scoreText").style.fontSize = "72px";
+
+    var badge = document.getElementById("qualityBadge");
+    badge.className = "quality-badge";
+    if(quality.includes("Excellent") || quality.includes("Good")) badge.classList.add("excellent");
+    else if(quality.includes("Fair")) badge.classList.add("fair");
+    else badge.classList.add("poor");
+}
+
+// Main Chart
+var dates = {{ dates|tojson if dates else [] }};
+var scores = {{ scores|tojson if scores else [] }};
+
+if(dates.length > 0){
+    new Chart(document.getElementById("sleepChart"),{
+        type:"line",
+        data:{
+            labels:dates,
+            datasets:[{
+                label:"Sleep Score",
+                data:scores,
+                borderColor:"#6366f1",
+                backgroundColor:"rgba(99, 102, 241, 0.1)",
+                fill:true,
+                tension:0.4,
+                pointBackgroundColor:"#6366f1",
+                pointBorderColor:"white",
+                pointBorderWidth:2,
+                pointRadius:5,
+                pointHoverRadius:7
+            }]
+        },
+        options:{
+            responsive:true,
+            scales:{y:{min:0,max:100, grid:{color:"rgba(0,0,0,0.05)"}}, x:{grid:{display:false}}},
+            plugins:{legend:{display:true, position:'top'}}
+        }
+    });
+}
+
+// Modal Chart
+if(dates.length > 0 && document.getElementById("sleepChartModal")){
+    new Chart(document.getElementById("sleepChartModal"),{
+        type:"line",
+        data:{
+            labels:dates,
+            datasets:[{
+                label:"Sleep Score",
+                data:scores,
+                borderColor:"#6366f1",
+                backgroundColor:"rgba(99, 102, 241, 0.1)",
+                fill:true,
+                tension:0.4,
+                pointBackgroundColor:"#6366f1",
+                pointBorderColor:"white",
+                pointBorderWidth:2,
+                pointRadius:4
+            }]
+        },
+        options:{
+            responsive:true,
+            scales:{y:{min:0,max:100, grid:{color:"rgba(0,0,0,0.05)"}}, x:{grid:{display:false}}},
+            plugins:{legend:{display:true, position:'top'}}
+        }
+    });
+}
+</script>
+
+</body>
+</html>
