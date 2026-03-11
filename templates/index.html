@@ -278,6 +278,20 @@ function showLoading() {
     document.getElementById("loadingBox").style.display = "block";
 }
 
+// Auto-open report modal when there's a report
+{% if report %}
+document.addEventListener('DOMContentLoaded', function() {
+    var reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+    reportModal.show();
+});
+{% else %}
+// Auto-open analyzer modal on page load
+document.addEventListener('DOMContentLoaded', function() {
+    var analyzerModal = new bootstrap.Modal(document.getElementById('analyzerModal'));
+    analyzerModal.show();
+});
+{% endif %}
+
 // Score Gauge
 var score = {{ report.score if report else 0 }};
 
