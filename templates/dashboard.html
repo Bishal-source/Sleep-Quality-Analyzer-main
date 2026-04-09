@@ -6,24 +6,71 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body>
+<body {% if dark_mode %}class="dark-mode"{% endif %}>
 
 <div class="dashboard-container">
     <div class="glass-card">
         <div class="dashboard-header">
             <div>
-                <h1 class="title-box" style="margin-bottom: 10px;">Sleep Quality Dashboard</h1>
+                <h1 class="title-box" style="margin-bottom: 10px;">📊 Sleep Quality Dashboard</h1>
                 <p class="welcome-text">Welcome back, {{ user }}!</p>
             </div>
-            <a href="/logout" class="logout-btn">Logout</a>
+            <div class="d-flex gap-2">
+                <a href="/toggle_dark_mode" class="logout-btn" title="Toggle Dark Mode">
+                    <i class="fas fa-{% if dark_mode %}sun{% else %}moon{% endif %}"></i>
+                </a>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card fade-in stagger-1">
+                <div class="icon">📊</div>
+                <div class="value">{{ stats[0] if stats[0] else 0 }}</div>
+                <div class="label">Total Records</div>
+            </div>
+            <div class="stat-card fade-in stagger-2">
+                <div class="icon">⭐</div>
+                <div class="value">{{ "%.1f"|format(stats[1] or 0) }}</div>
+                <div class="label">Average Score</div>
+            </div>
+            <div class="stat-card fade-in stagger-3">
+                <div class="icon">🏆</div>
+                <div class="value">{{ stats[2] if stats[2] else 0 }}</div>
+                <div class="label">Best Score</div>
+            </div>
+            <div class="stat-card fade-in stagger-4">
+                <div class="icon">📉</div>
+                <div class="value">{{ stats[3] if stats[3] else 0 }}</div>
+                <div class="label">Lowest Score</div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions-grid">
+            <div class="action-card" onclick="window.location.href='/'">
+                <span class="icon">✨</span>
+                <span class="label">Analyzer</span>
+            </div>
+            <div class="action-card" onclick="window.location.href='/history'">
+                <span class="icon">📋</span>
+                <span class="label">History</span>
+            </div>
+            <div class="action-card" onclick="window.location.href='/tips'">
+                <span class="icon">💡</span>
+                <span class="label">Tips</span>
+            </div>
         </div>
 
         {% if dates and dates|length > 0 %}
-        <div class="chart-container">
+        <div class="chart-section fade-in">
+            <h3><i class="fas fa-chart-line"></i> Sleep Score Trend</h3>
             <canvas id="sleepChart" height="100"></canvas>
         </div>
         {% else %}
@@ -31,6 +78,28 @@
             <div class="icon" style="font-size: 64px; margin-bottom: 20px;">📊</div>
             <h3>No Sleep Records Yet</h3>
             <p style="color: #64748b; margin: 16px 0;">Start tracking your sleep quality to see your progress over time.</p>
+        </div>
+        {% endif %}
+
+        <!-- Recent Records -->
+        {% if recent and recent|length > 0 %}
+        <div class="records-section fade-in">
+            <h3><i class="fas fa-history"></i> Recent Sleep Records</h3>
+            {% for record in recent %}
+            <div class="record-item">
+                <span class="record-date">
+                    <i class="fas fa-calendar-alt"></i> {{ record[13][:10] }}
+                </span>
+                <div class="record-score">
+                    <span class="score-badge {% if record[12] >= 80 %}excellent{% elif record[12] >= 60 %}good{% elif record[12] >= 40 %}fair{% else %}poor{% endif %}">
+                        {{ record[12] }}/100 - {{ record[11] }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="text-center mt-3">
+                <a href="/history" class="btn-3d small">View All Records</a>
+            </div>
         </div>
         {% endif %}
 
@@ -42,14 +111,13 @@
     </div>
 </div>
 
-<script>
-var dates = {{ dates | tojson }};
-var scores = {{ scores | tojson }};
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 
-if(dates.length === 0){
-    document.getElementById("sleepChart").outerHTML =
-    "<div class='text-center py-5'><h4>No sleep records found.</h4></div>";
-}else{
+<script>
+var dates = {{ dates|tojson if dates else [] }};
+var scores = {{ scores|tojson if scores else [] }};
+
+if(dates.length > 0){
     new Chart(document.getElementById("sleepChart"),{
         type:"line",
         data:{
@@ -70,19 +138,8 @@ if(dates.length === 0){
         },
         options:{
             responsive:true,
-            plugins:{
-                legend:{display:true, position:'top'}
-            },
-            scales:{
-                y:{
-                    min:0,
-                    max:100,
-                    grid:{color:"rgba(0,0,0,0.05)"}
-                },
-                x:{
-                    grid:{display:false}
-                }
-            }
+            scales:{y:{min:0,max:100, grid:{color:"rgba(0,0,0,0.05)"}}, x:{grid:{display:false}}},
+            plugins:{legend:{display:true, position:'top'}}
         }
     });
 }

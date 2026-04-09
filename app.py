@@ -12,14 +12,8 @@ import matplotlib.pyplot as plt
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet
 
-
 app = Flask(__name__)
 app.secret_key = "sleep_ai_secret"
-
-
-# LOAD ML MODEL
-model = pickle.load(open("sleep_model.pkl","rb"))
-le = pickle.load(open("label_encoder.pkl","rb"))
 
 
 # DATABASE INIT
@@ -68,13 +62,29 @@ def calculate_score(duration, stress, activity,
 
     score = 50
 
-    score += duration * 5
+    # Duration: +7 points per hour (7-9h = optimal)
+    score += duration * 7
+
+    # Stress: -4 points per level (0-10 scale)
     score -= stress * 4
-    score += activity * 0.2
+
+    # Activity: +0.3 points per minute
+    score += activity * 0.3
+
+    # Caffeine: -3 points per cup
     score -= caffeine * 3
-    score -= screen * 2
-    score += (spo2_after - 90) * 1.5
-    score -= abs(hr_after - hr_before) * 0.2
+
+    # Screen time: -4 points per hour
+    score -= screen * 4
+
+    # SpO2: bonus if >= 95%, penalty if < 90%
+    if spo2_after >= 95:
+        score += 10
+    elif spo2_after < 90:
+        score -= 10
+
+    # HR Change: small penalty for large changes
+    score -= abs(hr_after - hr_before) * 0.1
 
     return max(0, min(100, int(score)))
 
@@ -153,6 +163,141 @@ def logout():
     return redirect("/login")
 
 
+# DARK MODE TOGGLE
+@app.route("/toggle_dark_mode")
+def toggle_dark_mode():
+    if "user" not in session:
+        return redirect("/login")
+
+    session["dark_mode"] = not session.get("dark_mode", False)
+    return redirect(request.referrer or "/")
+
+
+# SLEEP HISTORY
+@app.route("/history")
+def history():
+
+    if "user" not in session:
+        return redirect("/login")
+
+    username = session["user"]
+
+    quality_filter = request.args.get("quality", "")
+    date_from = request.args.get("date_from", "")
+    date_to = request.args.get("date_to", "")
+
+    query = "SELECT * FROM sleep_records WHERE username=?"
+    params = [username]
+
+    if quality_filter:
+        query += " AND quality=?"
+        params.append(quality_filter)
+
+    if date_from:
+        query += " AND date>=?"
+        params.append(date_from)
+
+    if date_to:
+        query += " AND date<=?"
+        params.append(date_to)
+
+    query += " ORDER BY date DESC"
+
+    conn = sqlite3.connect("sleep.db")
+    records = conn.execute(query, params).fetchall()
+    conn.close()
+
+    return render_template(
+        "history.html",
+        user=username,
+        records=records,
+        quality_filter=quality_filter,
+        date_from=date_from,
+        date_to=date_to
+    )
+
+
+# SLEEP TIPS
+@app.route("/tips")
+def tips():
+
+    if "user" not in session:
+        return redirect("/login")
+
+    username = session["user"]
+
+    conn = sqlite3.connect("sleep.db")
+
+    recent = conn.execute("""
+        SELECT * FROM sleep_records
+        WHERE username=?
+        ORDER BY date DESC
+        LIMIT 30
+    """, (username,)).fetchall()
+
+    stats = conn.execute("""
+        SELECT
+            AVG(duration) as avg_duration,
+            AVG(stress) as avg_stress,
+            AVG(activity) as avg_activity,
+            AVG(caffeine) as avg_caffeine,
+            AVG(screen) as avg_screen,
+            AVG(spo2_after) as avg_spo2,
+            AVG(hr_after) as avg_hr,
+            AVG(score) as avg_score
+        FROM sleep_records WHERE username=?
+    """, (username,)).fetchone()
+
+    conn.close()
+
+    tips = []
+
+    if not recent:
+        tips.append({"icon": "fa-bed", "title": "Start Tracking", "text": "Log your first sleep record to get personalized tips!", "type": "info"})
+    else:
+        if stats[0] < 7:
+            tips.append({"icon": "fa-clock", "title": "Sleep More", "text": f"You're averaging {stats[0]:.1f}h sleep. Aim for 7-9 hours for optimal health.", "type": "warning"})
+        elif stats[0] >= 7 and stats[0] <= 9:
+            tips.append({"icon": "fa-check-circle", "title": "Great Sleep Duration", "text": "Your sleep duration is in the healthy range!", "type": "success"})
+        else:
+            tips.append({"icon": "fa-moon", "title": "Avoid Oversleeping", "text": f"You're averaging {stats[0]:.1f}h. Too much sleep can also affect quality.", "type": "info"})
+
+        if stats[1] > 5:
+            tips.append({"icon": "fa-brain", "title": "Reduce Stress", "text": f"Your stress level is {stats[1]:.1f}/10. Try meditation or deep breathing exercises.", "type": "warning"})
+        else:
+            tips.append({"icon": "fa-smile", "title": "Manage Stress Well", "text": "Your stress levels are well controlled. Keep it up!", "type": "success"})
+
+        if stats[2] < 30:
+            tips.append({"icon": "fa-running", "title": "More Activity", "text": f"You're averaging {stats[2]:.0f}min activity. Try to get at least 30 minutes daily.", "type": "warning"})
+        else:
+            tips.append({"icon": "fa-heartbeat", "title": "Active Lifestyle", "text": f"Great! {stats[2]:.0f}min daily activity helps sleep quality.", "type": "success"})
+
+        if stats[3] > 2:
+            tips.append({"icon": "fa-coffee", "title": "Limit Caffeine", "text": f"You're having {stats[3]:.1f} cups daily. Try to reduce, especially after 2pm.", "type": "warning"})
+        else:
+            tips.append({"icon": "fa-check", "title": "Healthy Caffeine", "text": "Your caffeine intake is at a healthy level.", "type": "success"})
+
+        if stats[4] > 2:
+            tips.append({"icon": "fa-mobile-alt", "title": "Reduce Screen Time", "text": f"You're on screens {stats[4]:.1f}h before bed. Try to stop 1-2 hours before sleep.", "type": "warning"})
+        else:
+            tips.append({"icon": "fa-book", "title": "Good Screen Habits", "text": "You're limiting screen time before bed. Great job!", "type": "success"})
+
+        if stats[5] < 95:
+            tips.append({"icon": "fa-user-md", "title": "Check SpO2", "text": f"Your avg SpO2 is {stats[5]:.1f}%. Consult a doctor if this persists.", "type": "warning"})
+        else:
+            tips.append({"icon": "fa-lungs", "title": "Healthy SpO2", "text": f"Your SpO2 levels are great at {stats[5]:.1f}%!", "type": "success"})
+
+        if stats[7]:
+            if stats[7] >= 75:
+                tips.append({"icon": "fa-trophy", "title": "Excellent Sleep!", "text": f"Your average score is {stats[7]:.0f}/100. Keep up the great work!", "type": "success"})
+            elif stats[7] >= 50:
+                tips.append({"icon": "fa-chart-line", "title": "Room for Improvement", "text": f"Your score is {stats[7]:.0f}/100. Try following the tips above to improve!", "type": "info"})
+            else:
+                tips.append({"icon": "fa-exclamation-triangle", "title": "Needs Attention", "text": f"Your score is {stats[7]:.0f}/100. Consider consulting a sleep specialist.", "type": "warning"})
+
+    return render_template("tips.html", user=username, tips=tips, stats=stats, dark_mode=session.get("dark_mode", False))
+
+
 # HOME
 @app.route("/", methods=["GET","POST"])
 def home():
@@ -167,33 +312,50 @@ def home():
 
         try:
 
-            duration = float(request.form["duration"])
-            stress = float(request.form["stress"])
-            activity = float(request.form["activity"])
-            caffeine = float(request.form["caffeine"])
-            screen = float(request.form["screen"])
-            spo2_before = float(request.form["spo2_before"])
-            spo2_after = float(request.form["spo2_after"])
-            hr_before = float(request.form["hr_before"])
-            hr_after = float(request.form["hr_after"])
+            # Input validation
+            try:
+                duration = float(request.form["duration"])
+                stress = float(request.form["stress"])
+                activity = float(request.form["activity"])
+                caffeine = float(request.form["caffeine"])
+                screen = float(request.form["screen"])
+                spo2_before = float(request.form["spo2_before"])
+                spo2_after = float(request.form["spo2_after"])
+                hr_before = float(request.form["hr_before"])
+                hr_after = float(request.form["hr_after"])
+            except ValueError:
+                error = "Please enter valid numbers for all fields"
+                raise ValueError(error)
 
-
-            prediction = model.predict([[
-
-                duration,
-                stress,
-                activity,
-                caffeine,
-                screen,
-                spo2_before,
-                spo2_after,
-                hr_before,
-                hr_after
-
-            ]])
-
-            prediction = le.inverse_transform(prediction)[0]
-
+            # Range validation
+            if not (0 <= duration <= 24):
+                error = "Duration must be between 0 and 24 hours"
+                raise ValueError(error)
+            if not (0 <= stress <= 10):
+                error = "Stress level must be between 0 and 10"
+                raise ValueError(error)
+            if not (0 <= activity <= 300):
+                error = "Activity must be between 0 and 300 minutes"
+                raise ValueError(error)
+            if not (0 <= caffeine <= 10):
+                error = "Caffeine must be between 0 and 10 cups"
+                raise ValueError(error)
+            if not (0.5 <= screen <= 12):
+                error = "Screen time must be between 0.5 and 12 hours"
+                raise ValueError(error)
+            if not (70 <= spo2_before <= 100):
+                error = "SpO2 before must be between 70 and 100%"
+                raise ValueError(error)
+            if not (70 <= spo2_after <= 100):
+                error = "SpO2 after must be between 70 and 100%"
+                raise ValueError(error)
+            if not (40 <= hr_before <= 180):
+                error = "Heart rate before must be between 40 and 180 bpm"
+                raise ValueError(error)
+            if not (40 <= hr_after <= 180):
+                error = "Heart rate after must be between 40 and 180 bpm"
+                raise ValueError(error)
+            sleep_date = request.form.get("sleep_date", datetime.now().strftime("%Y-%m-%d"))
 
             score = calculate_score(
                 duration,stress,activity,
@@ -201,6 +363,14 @@ def home():
                 spo2_before,spo2_after,
                 hr_before,hr_after
             )
+
+            # Derive quality from score for consistency
+            if score >= 70:
+                prediction = "best"
+            elif score >= 40:
+                prediction = "good"
+            else:
+                prediction = "poor"
 
 
             conn = sqlite3.connect("sleep.db")
@@ -303,7 +473,7 @@ def home():
     avg_score = round(sum(scores) / len(scores), 1) if scores else 0
     best_score = max(scores) if scores else 0
 
-    # Calculate streak (consecutive days with records)
+    # Calculate streak
     current_streak = 0
     if dates:
         dates_sorted = sorted(set(dates), reverse=True)
@@ -342,7 +512,67 @@ def home():
         avg_score=avg_score,
         current_streak=current_streak,
         best_score=best_score,
-        recent_records=recent_records
+        recent_records=recent_records,
+        dark_mode=session.get("dark_mode", False)
+    )
+
+
+# DASHBOARD
+@app.route("/dashboard")
+def dashboard():
+
+    if "user" not in session:
+        return redirect("/login")
+
+    username = session["user"]
+
+    conn = sqlite3.connect("sleep.db")
+
+    all_records = conn.execute(
+        "SELECT * FROM sleep_records WHERE username=? ORDER BY date DESC",
+        (username,)
+    ).fetchall()
+
+    stats = conn.execute("""
+        SELECT
+            COUNT(*) as total_records,
+            AVG(score) as avg_score,
+            MAX(score) as max_score,
+            MIN(score) as min_score
+        FROM sleep_records WHERE username=?
+    """, (username,)).fetchone()
+
+    quality_dist = conn.execute("""
+        SELECT quality, COUNT(*) as count
+        FROM sleep_records WHERE username=?
+        GROUP BY quality
+    """, (username,)).fetchall()
+
+    recent = conn.execute(
+        "SELECT * FROM sleep_records WHERE username=? ORDER BY date DESC LIMIT 7",
+        (username,)
+    ).fetchall()
+
+    trend_data = conn.execute(
+        "SELECT date, score FROM sleep_records WHERE username=? ORDER BY date ASC",
+        (username,)
+    ).fetchall()
+
+    conn.close()
+
+    dates = [d[0][:10] for d in trend_data]
+    scores = [d[1] for d in trend_data]
+
+    return render_template(
+        "dashboard.html",
+        user=username,
+        records=all_records,
+        stats=stats,
+        quality_dist=quality_dist,
+        recent=recent,
+        dates=dates,
+        scores=scores,
+        dark_mode=session.get("dark_mode", False)
     )
 
 

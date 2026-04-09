@@ -783,3 +783,705 @@ h1, h2, h3, h4, h5 {
 .stagger-2 { animation-delay: 0.2s; }
 .stagger-3 { animation-delay: 0.3s; }
 .stagger-4 { animation-delay: 0.4s; }
+
+/* ========================================
+   DARK MODE
+   ======================================== */
+body.dark-mode {
+    background: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460, #1a1a2e);
+    background-size: 400% 400%;
+    color: #e0e0e0;
+}
+
+body.dark-mode .glass-card {
+    background: rgba(30, 30, 50, 0.9);
+    border: 1px solid rgba(100, 100, 150, 0.3);
+}
+
+body.dark-mode .glass-card h4,
+body.dark-mode .glass-card h5,
+body.dark-mode .title-box {
+    color: #e0e0e0;
+}
+
+body.dark-mode .form-control {
+    background: rgba(40, 40, 60, 0.9);
+    border-color: #4a4a6a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .form-control:focus {
+    border-color: #66ccff;
+    background: rgba(40, 40, 60, 0.9);
+    color: #e0e0e0;
+}
+
+body.dark-mode .form-label {
+    color: #b0b0b0;
+}
+
+body.dark-mode .table {
+    color: #e0e0e0;
+}
+
+body.dark-mode .table thead {
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+}
+
+body.dark-mode .table tbody tr:hover {
+    background: rgba(100, 100, 150, 0.2);
+}
+
+body.dark-mode .stat-card {
+    background: rgba(40, 40, 60, 0.9);
+    border: 1px solid rgba(100, 100, 150, 0.3);
+}
+
+body.dark-mode .stats-card {
+    background: rgba(40, 40, 60, 0.9);
+}
+
+body.dark-mode .stat-card .value,
+body.dark-mode .stats-value {
+    color: #66ccff;
+}
+
+body.dark-mode .stat-card .label,
+body.dark-mode .stats-label {
+    color: #a0a0a0;
+}
+
+body.dark-mode .filter-card {
+    background: rgba(40, 40, 60, 0.9);
+}
+
+body.dark-mode .input-group-text {
+    background: rgba(40, 40, 60, 0.9);
+    border-color: #4a4a6a;
+    color: #b0b0b0;
+}
+
+body.dark-mode .navbar {
+    background: linear-gradient(145deg, #0a0a15, #1a1a2e) !important;
+}
+
+body.dark-mode .modal-content {
+    background: rgba(30, 30, 50, 0.95);
+}
+
+body.dark-mode .modal-header {
+    border-bottom-color: rgba(100, 100, 150, 0.3);
+}
+
+body.dark-mode .text-muted {
+    color: #a0a0a0 !important;
+}
+
+body.dark-mode .input-section {
+    background: rgba(40, 40, 60, 0.5);
+}
+
+body.dark-mode .recommendations {
+    background: rgba(40, 40, 60, 0.5);
+}
+
+body.dark-mode .record-item {
+    background: rgba(40, 40, 60, 0.5);
+}
+
+body.dark-mode .record-item:hover {
+    background: rgba(60, 60, 80, 0.6);
+}
+
+body.dark-mode .record-date {
+    color: #e0e0e0;
+}
+
+body.dark-mode .auth-footer {
+    color: #a0a0a0;
+}
+
+body.dark-mode .nav-tabs .nav-link {
+    color: #b0b0b0;
+}
+
+body.dark-mode .nav-tabs .nav-link.active {
+    color: #66ccff;
+    border-bottom-color: #66ccff;
+}
+
+/* ========================================
+   ADDITIONAL ANIMATIONS
+   ======================================== */
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-slide-left {
+    animation: slideInLeft 0.5s ease forwards;
+}
+
+.animate-slide-right {
+    animation: slideInRight 0.5s ease forwards;
+}
+
+.animate-scale-in {
+    animation: scaleIn 0.5s ease forwards;
+}
+
+.animate-delay-1 { animation-delay: 0.1s; opacity: 0; }
+.animate-delay-2 { animation-delay: 0.2s; opacity: 0; }
+.animate-delay-3 { animation-delay: 0.3s; opacity: 0; }
+.animate-delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+.tip-card {
+    animation: slideInLeft 0.5s ease forwards;
+    opacity: 0;
+}
+
+.tip-card:nth-child(even) {
+    animation-name: slideInRight;
+}
+
+.tip-card:nth-child(1) { animation-delay: 0.1s; }
+.tip-card:nth-child(2) { animation-delay: 0.2s; }
+.tip-card:nth-child(3) { animation-delay: 0.3s; }
+.tip-card:nth-child(4) { animation-delay: 0.4s; }
+.tip-card:nth-child(5) { animation-delay: 0.5s; }
+.tip-card:nth-child(6) { animation-delay: 0.6s; }
+
+.history-table tbody tr {
+    animation: fadeIn 0.3s ease forwards;
+    opacity: 0;
+}
+
+.history-table tbody tr:nth-child(1) { animation-delay: 0.05s; }
+.history-table tbody tr:nth-child(2) { animation-delay: 0.1s; }
+.history-table tbody tr:nth-child(3) { animation-delay: 0.15s; }
+.history-table tbody tr:nth-child(4) { animation-delay: 0.2s; }
+.history-table tbody tr:nth-child(5) { animation-delay: 0.25s; }
+.history-table tbody tr:nth-child(6) { animation-delay: 0.3s; }
+.history-table tbody tr:nth-child(7) { animation-delay: 0.35s; }
+.history-table tbody tr:nth-child(8) { animation-delay: 0.4s; }
+.history-table tbody tr:nth-child(9) { animation-delay: 0.45s; }
+.history-table tbody tr:nth-child(10) { animation-delay: 0.5s; }
+
+.dark-mode-toggle {
+    transition: all 0.3s ease;
+}
+
+.dark-mode-toggle:hover {
+    transform: rotate(15deg);
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.animate-bounce {
+    animation: bounce 0.6s ease infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+.btn-3d.pulse {
+    animation: pulse 2s infinite;
+}
+/* ========================================
+   DARK MODE FIXES - Enhanced Visibility
+   ======================================== */
+body.dark-mode {
+    background: linear-gradient(-45deg, #0d1117, #161b22, #1a1a2e, #0d1117) !important;
+    background-size: 400% 400% !important;
+    color: #e6edf3 !important;
+}
+
+/* Header and titles */
+body.dark-mode .welcome-text {
+    color: #e6edf3 !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .title-box {
+    background: linear-gradient(145deg, #238636, #1f6feb) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
+body.dark-mode h4, body.dark-mode h5 {
+    color: #e6edf3 !important;
+}
+
+/* Glass card improvements */
+body.dark-mode .glass-card {
+    background: rgba(22, 27, 34, 0.95) !important;
+    border: 1px solid rgba(48, 54, 61, 0.8) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.dark-mode .glass-card p,
+body.dark-mode .glass-card li {
+    color: #c9d1d9 !important;
+}
+
+/* Stats and values */
+body.dark-mode .stat-card .value,
+body.dark-mode .stats-value,
+body.dark-mode .value {
+    color: #58a6ff !important;
+}
+
+body.dark-mode .stat-card .label,
+body.dark-mode .stats-label,
+body.dark-mode .label {
+    color: #8b949e !important;
+}
+
+body.dark-mode .stat-card .icon {
+    filter: grayscale(0) !important;
+}
+
+/* Form inputs */
+body.dark-mode .form-control {
+    background: rgba(22, 27, 34, 0.95) !important;
+    border-color: #30363d !important;
+    color: #e6edf3 !important;
+}
+
+body.dark-mode .form-control::placeholder {
+    color: #6e7681 !important;
+}
+
+body.dark-mode .form-control:focus {
+    border-color: #58a6ff !important;
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2) !important;
+}
+
+body.dark-mode .form-label {
+    color: #e6edf3 !important;
+}
+
+body.dark-mode select.form-select {
+    background-color: rgba(22, 27, 34, 0.95) !important;
+    color: #e6edf3 !important;
+    border-color: #30363d !important;
+}
+
+/* Tables */
+body.dark-mode .table {
+    color: #e6edf3 !important;
+}
+
+body.dark-mode .table thead {
+    background: linear-gradient(145deg, #161b22, #0d1117) !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .table thead th {
+    color: #ffffff !important;
+    border-bottom: 2px solid #30363d !important;
+}
+
+body.dark-mode .table tbody tr {
+    border-bottom: 1px solid #21262d !important;
+}
+
+body.dark-mode .table tbody tr:hover {
+    background: rgba(56, 139, 253, 0.15) !important;
+}
+
+body.dark-mode .table td {
+    color: #c9d1d9 !important;
+}
+
+/* Action cards */
+body.dark-mode .action-card {
+    background: rgba(22, 27, 34, 0.95) !important;
+    border: 1px solid #30363d !important;
+}
+
+body.dark-mode .action-card:hover {
+    border-color: #58a6ff !important;
+    background: rgba(56, 139, 253, 0.15) !important;
+}
+
+body.dark-mode .action-card .label {
+    color: #e6edf3 !important;
+}
+
+/* Buttons */
+body.dark-mode .logout-btn {
+    background: rgba(56, 139, 253, 0.2) !important;
+    color: #e6edf3 !important;
+    border: 1px solid #30363d !important;
+}
+
+body.dark-mode .logout-btn:hover {
+    background: rgba(56, 139, 253, 0.3) !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .btn-3d {
+    background: linear-gradient(145deg, #238636, #1f6feb) !important;
+}
+
+body.dark-mode .btn-3d:hover {
+    background: linear-gradient(145deg, #2ea043, #388bfd) !important;
+}
+
+/* Navbar */
+body.dark-mode .navbar {
+    background: linear-gradient(145deg, #0d1117, #161b22) !important;
+    border-bottom: 1px solid #30363d !important;
+}
+
+body.dark-mode .nav-tabs .nav-link {
+    color: #8b949e !important;
+}
+
+body.dark-mode .nav-tabs .nav-link.active {
+    color: #58a6ff !important;
+    border-bottom-color: #58a6ff !important;
+}
+
+/* Records section */
+body.dark-mode .record-item {
+    background: rgba(22, 27, 34, 0.9) !important;
+    border: 1px solid #30363d !important;
+}
+
+body.dark-mode .record-item:hover {
+    background: rgba(56, 139, 253, 0.15) !important;
+}
+
+body.dark-mode .record-date {
+    color: #e6edf3 !important;
+}
+
+body.dark-mode .records-section h3,
+body.dark-mode .chart-section h3 {
+    color: #e6edf3 !important;
+}
+
+/* Score badges */
+body.dark-mode .score-badge {
+    font-weight: 600;
+}
+
+body.dark-mode .score-badge.excellent {
+    background: rgba(46, 160, 67, 0.3) !important;
+    color: #3fb950 !important;
+}
+
+body.dark-mode .score-badge.good {
+    background: rgba(56, 139, 253, 0.3) !important;
+    color: #58a6ff !important;
+}
+
+body.dark-mode .score-badge.fair {
+    background: rgba(187, 128, 9, 0.3) !important;
+    color: #d29922 !important;
+}
+
+body.dark-mode .score-badge.poor {
+    background: rgba(218, 54, 51, 0.3) !important;
+    color: #f85149 !important;
+}
+
+/* Quality badges */
+body.dark-mode .quality-badge {
+    font-weight: 600;
+}
+
+body.dark-mode .quality-badge.excellent {
+    background: rgba(46, 160, 67, 0.3) !important;
+    color: #3fb950 !important;
+}
+
+body.dark-mode .quality-badge.fair {
+    background: rgba(187, 128, 9, 0.3) !important;
+    color: #d29922 !important;
+}
+
+body.dark-mode .quality-badge.poor {
+    background: rgba(218, 54, 51, 0.3) !important;
+    color: #f85149 !important;
+}
+
+/* Filter card */
+body.dark-mode .filter-card {
+    background: rgba(22, 27, 34, 0.95) !important;
+    border: 1px solid #30363d !important;
+}
+
+/* Chart section */
+body.dark-mode .chart-section {
+    background: rgba(22, 27, 34, 0.95) !important;
+    border: 1px solid #30363d !important;
+}
+
+/* Input section */
+body.dark-mode .input-section {
+    background: rgba(22, 27, 34, 0.8) !important;
+    border: 1px solid #30363d !important;
+}
+
+body.dark-mode .input-section h5 {
+    color: #58a6ff !important;
+    border-bottom-color: #30363d !important;
+}
+
+/* Recommendations */
+body.dark-mode .recommendations {
+    background: rgba(22, 27, 34, 0.8) !important;
+    border: 1px solid #30363d !important;
+}
+
+body.dark-mode .recommendations h5 {
+    color: #e6edf3 !important;
+}
+
+body.dark-mode .recommendations li {
+    color: #c9d1d9 !important;
+}
+
+/* Score display */
+body.dark-mode .score-display .score-label {
+    color: #8b949e !important;
+}
+
+/* Modal */
+body.dark-mode .modal-content {
+    background: rgba(22, 27, 34, 0.98) !important;
+    border: 1px solid #30363d !important;
+}
+
+body.dark-mode .modal-header {
+    border-bottom-color: #30363d !important;
+}
+
+body.dark-mode .modal-body {
+    color: #e6edf3 !important;
+}
+
+/* Tip cards */
+body.dark-mode .tip-card {
+    border: 1px solid #30363d !important;
+}
+
+body.dark-mode .tip-card h5 {
+    color: #e6edf3 !important;
+}
+
+body.dark-mode .tip-card p {
+    color: #c9d1d9 !important;
+}
+
+/* Alert */
+body.dark-mode .alert-danger {
+    background: rgba(218, 54, 51, 0.2) !important;
+    color: #f85149 !important;
+    border: 1px solid rgba(218, 54, 51, 0.4) !important;
+}
+
+/* Text utilities */
+body.dark-mode .text-muted {
+    color: #8b949e !important;
+}
+
+body.dark-mode .text-center {
+    color: #c9d1d9 !important;
+}
+
+/* Auth pages */
+body.dark-mode .auth-footer {
+    color: #8b949e !important;
+}
+
+body.dark-mode .auth-footer a {
+    color: #58a6ff !important;
+}
+
+/* Spinner */
+body.dark-mode .spinner {
+    border-color: #30363d !important;
+    border-top-color: #58a6ff !important;
+}
+
+/* Badge */
+body.dark-mode .badge.bg-success {
+    background-color: rgba(46, 160, 67, 0.3) !important;
+    color: #3fb950 !important;
+}
+
+body.dark-mode .badge.bg-warning {
+    background-color: rgba(187, 128, 9, 0.3) !important;
+    color: #d29922 !important;
+}
+
+body.dark-mode .badge.bg-danger {
+    background-color: rgba(218, 54, 51, 0.3) !important;
+    color: #f85149 !important;
+}
+
+/* ========================================
+   TIPS SECTION DARK MODE FIXES
+   ======================================== */
+
+/* Stats cards in tips page */
+body.dark-mode .stats-card {
+    background: rgba(22, 27, 34, 0.95) !important;
+    border: 1px solid #30363d !important;
+}
+
+body.dark-mode .stats-card .stats-value {
+    color: #58a6ff !important;
+}
+
+body.dark-mode .stats-card .stats-label {
+    color: #8b949e !important;
+}
+
+/* Tip card types - success */
+body.dark-mode .tip-card-success {
+    background: linear-gradient(145deg, rgba(46, 160, 67, 0.2), rgba(46, 160, 67, 0.15)) !important;
+    border-left: 5px solid #3fb950 !important;
+}
+
+/* Tip card types - warning */
+body.dark-mode .tip-card-warning {
+    background: linear-gradient(145deg, rgba(187, 128, 9, 0.2), rgba(187, 128, 9, 0.15)) !important;
+    border-left: 5px solid #d29922 !important;
+}
+
+/* Tip card types - info */
+body.dark-mode .tip-card-info {
+    background: linear-gradient(145deg, rgba(56, 139, 253, 0.2), rgba(56, 139, 253, 0.15)) !important;
+    border-left: 5px solid #58a6ff !important;
+}
+
+/* Tip icons */
+body.dark-mode .tip-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+body.dark-mode .tip-success .tip-icon { 
+    background: #3fb950 !important; 
+    color: white !important; 
+}
+
+body.dark-mode .tip-warning .tip-icon { 
+    background: #d29922 !important; 
+    color: white !important; 
+}
+
+body.dark-mode .tip-info .tip-icon { 
+    background: #58a6ff !important; 
+    color: white !important; 
+}
+
+/* Tip card text */
+body.dark-mode .tip-card h5 {
+    color: #e6edf3 !important;
+    margin-bottom: 8px;
+}
+
+body.dark-mode .tip-card p,
+body.dark-mode .tip-card .mb-0 {
+    color: #c9d1d9 !important;
+}
+
+/* General tips section */
+body.dark-mode .glass-card .title-box {
+    background: linear-gradient(145deg, #238636, #1f6feb) !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .text-muted {
+    color: #8b949e !important;
+}
+
+/* Info section in tips */
+body.dark-mode .glass-card .mb-4 {
+    color: #8b949e !important;
+}
+
+/* Empty state */
+body.dark-mode .text-center .animate-bounce {
+    color: #8b949e !important;
+}
+
+body.dark-mode .text-center h4 {
+    color: #e6edf3 !important;
+}
+
+/* ========================================
+   LOGIN/REGISTER PAGE DARK MODE FIXES
+   ======================================== */
+body.dark-mode .auth-header .icon {
+    background: linear-gradient(145deg, #238636, #1f6feb) !important;
+    box-shadow: 0 10px 30px rgba(31, 111, 235, 0.3) !important;
+}
+
+body.dark-mode .auth-card {
+    background: rgba(22, 27, 34, 0.95) !important;
+    border: 1px solid #30363d !important;
+}
+
+body.dark-mode .title-box {
+    background: linear-gradient(145deg, #238636, #1f6feb) !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .form-label {
+    color: #e6edf3 !important;
+}
+
+/* Alert on login/register */
+body.dark-mode .alert-danger {
+    background: rgba(218, 54, 51, 0.2) !important;
+    color: #f85149 !important;
+    border: 1px solid rgba(218, 54, 51, 0.4) !important;
+}
