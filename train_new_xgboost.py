@@ -12,7 +12,7 @@ print("TRAINING NEW XGBOOST MODEL")
 print("=" * 60)
 
 # Load dataset
-df = pd.read_csv(r"dataset/sleep_realistic_final.csv")
+df = pd.read_csv(r"dataset/sleep_quality_dataset.csv")
 print(f"Original data: {len(df)} rows")
 
 # Clean data

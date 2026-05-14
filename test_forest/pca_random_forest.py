@@ -1,0 +1,422 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.decomposition import PCA
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, classification_report
+from sklearn.ensemble import RandomForestClassifier
+import matplotlib.pyplot as plt
+import os
+from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+# Paths
+data_path = "C:/Users/bishal/Desktop/Sleep-Quality-Analyzer-main/dataset/sleep_quality_dataset.csv"
+output_dir = "C:/Users/bishal/Desktop/Sleep-Quality-Analyzer-main/test_forest"
+
+print("="*70)
+print("SLEEP QUALITY DATASET - PCA & RANDOM FOREST ANALYSIS")
+print("="*70)
+
+# Load dataset
+df = pd.read_csv(data_path)
+print(f"\nDataset shape: {df.shape}")
+print(f"Columns: {df.columns.tolist()}")
+
+# Clean data
+df_clean = df.dropna()
+print(f"After cleaning: {df_clean.shape[0]} rows")
+
+# Features and target
+feature_cols = ['Sleep Duration', 'Stress Level', 'Physical Activity', 'Caffeine Intake',
+                'Screen Time', 'SpO2 Before', 'SpO2 After', 'Heart Rate Before', 'Heart Rate After']
+target_col = 'Sleep Quality'
+
+X = df_clean[feature_cols]
+y = df_clean[target_col]
+
+# Encode target
+le = LabelEncoder()
+y_encoded = le.fit_transform(y)
+print(f"Target classes: {le.classes_}")
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+)
+print(f"Train: {X_train.shape}, Test: {X_test.shape}")
+
+# =====================================================
+# PCA ANALYSIS
+# =====================================================
+print("\n" + "="*70)
+print("PCA ANALYSIS")
+print("="*70)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+pca_full = PCA()
+pca_full.fit(X_train_scaled)
+
+print("\nExplained Variance Ratio:")
+for i, (var, cum) in enumerate(zip(pca_full.explained_variance_ratio_, np.cumsum(pca_full.explained_variance_ratio_))):
+    print(f"  PC{i+1}: {var*100:.2f}% (Cumulative: {cum*100:.2f}%)")
+
+n_components = np.argmax(np.cumsum(pca_full.explained_variance_ratio_) >= 0.80) + 1
+print(f"\nOptimal components (>=80%): {n_components}")
+
+pca = PCA(n_components=n_components)
+X_train_pca = pca.fit_transform(X_train_scaled)
+X_test_pca = pca.transform(X_test_scaled)
+
+print(f"PCA applied: {pca.n_components_} components, {sum(pca.explained_variance_ratio_)*100:.2f}% variance")
+
+# Save PCA data
+pca_results_df = pd.DataFrame(X_train_pca, columns=[f'PC{i+1}' for i in range(n_components)])
+pca_results_df['Sleep Quality'] = le.inverse_transform(y_train)
+pca_results_df.to_csv(os.path.join(output_dir, "pca_transformed_data.csv"), index=False)
+
+# Save variance
+variance_df = pd.DataFrame({
+    'Component': [f'PC{i+1}' for i in range(len(pca_full.explained_variance_ratio_))],
+    'Explained_Variance': pca_full.explained_variance_ratio_,
+    'Cumulative_Variance': np.cumsum(pca_full.explained_variance_ratio_)
+})
+variance_df.to_csv(os.path.join(output_dir, "explained_variance.csv"), index=False)
+
+# =====================================================
+# MODEL 1: RANDOM FOREST WITHOUT PCA
+# =====================================================
+print("\n" + "="*70)
+print("TRAINING RANDOM FOREST WITHOUT PCA")
+print("="*70)
+
+rf_no_pca = RandomForestClassifier(
+    n_estimators=100,
+    max_depth=10,
+    random_state=42,
+    n_jobs=-1
+)
+
+rf_no_pca.fit(X_train_scaled, y_train)
+y_pred_no_pca = rf_no_pca.predict(X_test_scaled)
+
+metrics_no_pca = {
+    'Accuracy': accuracy_score(y_test, y_pred_no_pca),
+    'Precision (Macro)': precision_score(y_test, y_pred_no_pca, average='macro'),
+    'Recall (Macro)': recall_score(y_test, y_pred_no_pca, average='macro'),
+    'F1 Score (Macro)': f1_score(y_test, y_pred_no_pca, average='macro'),
+    'Precision (Weighted)': precision_score(y_test, y_pred_no_pca, average='weighted'),
+    'Recall (Weighted)': recall_score(y_test, y_pred_no_pca, average='weighted'),
+    'F1 Score (Weighted)': f1_score(y_test, y_pred_no_pca, average='weighted')
+}
+
+print("\nWithout PCA Metrics:")
+for metric, value in metrics_no_pca.items():
+    print(f"  {metric}: {value:.4f}")
+
+print("\nClassification Report (Without PCA):")
+print(classification_report(y_test, y_pred_no_pca, target_names=le.classes_))
+
+cm_no_pca = confusion_matrix(y_test, y_pred_no_pca)
+print("Confusion Matrix:")
+print(cm_no_pca)
+
+# Feature Importance (Without PCA)
+feature_importance_no_pca = pd.DataFrame({
+    'Feature': feature_cols,
+    'Importance': rf_no_pca.feature_importances_
+}).sort_values('Importance', ascending=False)
+
+print("\nFeature Importance (Without PCA):")
+print(feature_importance_no_pca.to_string(index=False))
+
+# =====================================================
+# MODEL 2: RANDOM FOREST WITH PCA
+# =====================================================
+print("\n" + "="*70)
+print("TRAINING RANDOM FOREST WITH PCA")
+print("="*70)
+
+rf_with_pca = RandomForestClassifier(
+    n_estimators=100,
+    max_depth=10,
+    random_state=42,
+    n_jobs=-1
+)
+
+rf_with_pca.fit(X_train_pca, y_train)
+y_pred_pca = rf_with_pca.predict(X_test_pca)
+
+metrics_pca = {
+    'Accuracy': accuracy_score(y_test, y_pred_pca),
+    'Precision (Macro)': precision_score(y_test, y_pred_pca, average='macro'),
+    'Recall (Macro)': recall_score(y_test, y_pred_pca, average='macro'),
+    'F1 Score (Macro)': f1_score(y_test, y_pred_pca, average='macro'),
+    'Precision (Weighted)': precision_score(y_test, y_pred_pca, average='weighted'),
+    'Recall (Weighted)': recall_score(y_test, y_pred_pca, average='weighted'),
+    'F1 Score (Weighted)': f1_score(y_test, y_pred_pca, average='weighted')
+}
+
+print("\nWith PCA Metrics:")
+for metric, value in metrics_pca.items():
+    print(f"  {metric}: {value:.4f}")
+
+print("\nClassification Report (With PCA):")
+print(classification_report(y_test, y_pred_pca, target_names=le.classes_))
+
+cm_pca = confusion_matrix(y_test, y_pred_pca)
+print("Confusion Matrix:")
+print(cm_pca)
+
+# Feature Importance (With PCA - using component loadings)
+loadings = pd.DataFrame(pca.components_.T, columns=[f'PC{i+1}' for i in range(n_components)], index=feature_cols)
+loadings_importance = loadings.abs().sum(axis=1).sort_values(ascending=False)
+print("\nFeature Contribution to PCA Components:")
+print(loadings_importance)
+
+# =====================================================
+# CREATE VISUALIZATIONS
+# =====================================================
+fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+
+# Plot 1: Metrics comparison
+metrics_names = ['Accuracy', 'Precision (Macro)', 'Recall (Macro)', 'F1 Score (Macro)']
+x = np.arange(len(metrics_names))
+width = 0.35
+
+bars1 = axes[0, 0].bar(x - width/2, [metrics_no_pca[m] for m in metrics_names], width, label='Without PCA', color='forestgreen')
+bars2 = axes[0, 0].bar(x + width/2, [metrics_pca[m] for m in metrics_names], width, label='With PCA', color='darkorange')
+
+axes[0, 0].set_ylabel('Score')
+axes[0, 0].set_title('Random Forest Performance Comparison')
+axes[0, 0].set_xticks(x)
+axes[0, 0].set_xticklabels(metrics_names, rotation=15)
+axes[0, 0].legend()
+axes[0, 0].set_ylim(0.9, 1.01)
+
+for bar in bars1:
+    axes[0, 0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.002, f'{bar.get_height():.3f}', ha='center', va='bottom', fontsize=8)
+for bar in bars2:
+    axes[0, 0].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.002, f'{bar.get_height():.3f}', ha='center', va='bottom', fontsize=8)
+
+# Plot 2: Feature Importance (Without PCA)
+importance_sorted = feature_importance_no_pca.sort_values('Importance', ascending=True)
+axes[0, 1].barh(importance_sorted['Feature'], importance_sorted['Importance'], color='steelblue')
+axes[0, 1].set_xlabel('Importance')
+axes[0, 1].set_title('Feature Importance (Without PCA)')
+
+# Plot 3: Scree plot
+axes[1, 0].bar(range(1, 10), pca_full.explained_variance_ratio_, alpha=0.7, color='green', label='Individual')
+axes[1, 0].plot(range(1, 10), np.cumsum(pca_full.explained_variance_ratio_), 'ro-', label='Cumulative')
+axes[1, 0].axhline(y=0.80, color='g', linestyle='--', alpha=0.5, label='80% threshold')
+axes[1, 0].set_xlabel('Principal Component')
+axes[1, 0].set_ylabel('Explained Variance')
+axes[1, 0].set_title('PCA Scree Plot')
+axes[1, 0].legend()
+axes[1, 0].set_xticks(range(1, 10))
+
+# Plot 4: Confusion Matrix Comparison
+im1 = axes[1, 1].imshow(cm_no_pca, cmap='Greens')
+axes[1, 1].set_title('Confusion Matrix (Without PCA)')
+axes[1, 1].set_xticks(range(len(le.classes_)))
+axes[1, 1].set_yticks(range(len(le.classes_)))
+axes[1, 1].set_xticklabels(le.classes_)
+axes[1, 1].set_yticklabels(le.classes_)
+axes[1, 1].set_xlabel('Predicted')
+axes[1, 1].set_ylabel('Actual')
+for i in range(len(le.classes_)):
+    for j in range(len(le.classes_)):
+        axes[1, 1].text(j, i, cm_no_pca[i, j], ha='center', va='center', color='white' if cm_no_pca[i, j] > cm_no_pca.max()/2 else 'black')
+plt.colorbar(im1, ax=axes[1, 1])
+
+plt.tight_layout()
+plt.savefig(os.path.join(output_dir, "analysis_visualization.png"), dpi=150)
+
+# Second figure for PCA confusion matrix
+fig2, axes2 = plt.subplots(1, 2, figsize=(12, 5))
+
+im2 = axes2[0].imshow(cm_no_pca, cmap='Blues')
+axes2[0].set_title('Confusion Matrix (Without PCA)')
+axes2[0].set_xticks(range(len(le.classes_)))
+axes2[0].set_yticks(range(len(le.classes_)))
+axes2[0].set_xticklabels(le.classes_)
+axes2[0].set_yticklabels(le.classes_)
+axes2[0].set_xlabel('Predicted')
+axes2[0].set_ylabel('Actual')
+for i in range(len(le.classes_)):
+    for j in range(len(le.classes_)):
+        axes2[0].text(j, i, cm_no_pca[i, j], ha='center', va='center', color='white' if cm_no_pca[i, j] > cm_no_pca.max()/2 else 'black')
+plt.colorbar(im2, ax=axes2[0])
+
+im3 = axes2[1].imshow(cm_pca, cmap='Oranges')
+axes2[1].set_title('Confusion Matrix (With PCA)')
+axes2[1].set_xticks(range(len(le.classes_)))
+axes2[1].set_yticks(range(len(le.classes_)))
+axes2[1].set_xticklabels(le.classes_)
+axes2[1].set_yticklabels(le.classes_)
+axes2[1].set_xlabel('Predicted')
+axes2[1].set_ylabel('Actual')
+for i in range(len(le.classes_)):
+    for j in range(len(le.classes_)):
+        axes2[1].text(j, i, cm_pca[i, j], ha='center', va='center', color='white' if cm_pca[i, j] > cm_pca.max()/2 else 'black')
+plt.colorbar(im3, ax=axes2[1])
+
+plt.tight_layout()
+plt.savefig(os.path.join(output_dir, "confusion_matrices.png"), dpi=150)
+
+print(f"\nVisualizations saved to {output_dir}")
+
+# =====================================================
+# CREATE WORD DOCUMENT REPORT
+# =====================================================
+doc = Document()
+
+# Title
+title = doc.add_heading('Sleep Quality Analysis Report', 0)
+title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+doc.add_paragraph('PCA Analysis and Random Forest Model Comparison')
+doc.add_paragraph(f'Generated: {pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")}')
+
+# 1. Introduction
+doc.add_heading('1. Introduction', level=1)
+doc.add_paragraph(
+    'This report presents a comprehensive analysis of the Sleep Quality Dataset using Principal '
+    'Component Analysis (PCA) for dimensionality reduction and Random Forest classifier for prediction. '
+    'The report includes feature importance analysis and performance comparison.'
+)
+
+# 2. Dataset Description
+doc.add_heading('2. Dataset Description', level=1)
+doc.add_paragraph(f'Original dataset: {df.shape[0]} rows, {df.shape[1]} columns')
+doc.add_paragraph(f'After cleaning: {df_clean.shape[0]} rows')
+
+doc.add_paragraph('\nFeatures:')
+for col in feature_cols:
+    doc.add_paragraph(col, style='List Bullet')
+
+doc.add_paragraph(f'\nTarget: Sleep Quality')
+doc.add_paragraph(f'Classes: {list(le.classes_)}')
+
+doc.add_paragraph('\nClass distribution:')
+for cls in le.classes_:
+    count = (df_clean[target_col] == cls).sum()
+    doc.add_paragraph(f'  {cls}: {count} ({count/len(df_clean)*100:.1f}%)', style='List Bullet')
+
+doc.add_paragraph(f'\nTrain/Test split: 80%/20%')
+doc.add_paragraph(f'Train: {X_train.shape[0]}, Test: {X_test.shape[0]}')
+
+# 3. PCA Analysis
+doc.add_heading('3. PCA Analysis', level=1)
+doc.add_paragraph(f'Components selected: {pca.n_components_} (explaining {sum(pca.explained_variance_ratio_)*100:.2f}% variance)')
+
+doc.add_paragraph('\nExplained Variance:')
+for i, var in enumerate(pca_full.explained_variance_ratio_):
+    doc.add_paragraph(f'  PC{i+1}: {var*100:.2f}%', style='List Bullet')
+
+doc.add_paragraph('\nCumulative Variance:')
+for i, cum in enumerate(np.cumsum(pca_full.explained_variance_ratio_)):
+    if i < 5 or cum >= 0.80:
+        doc.add_paragraph(f'  PC1-PC{i+1}: {cum*100:.2f}%', style='List Bullet')
+
+# 4. Model Performance
+doc.add_heading('4. Model Performance Results', level=1)
+
+table = doc.add_table(rows=8, cols=3)
+table.style = 'Table Grid'
+
+header_cells = table.rows[0].cells
+header_cells[0].text = 'Metric'
+header_cells[1].text = 'Without PCA'
+header_cells[2].text = 'With PCA'
+
+metrics_list = ['Accuracy', 'Precision (Macro)', 'Recall (Macro)', 'F1 Score (Macro)',
+                'Precision (Weighted)', 'Recall (Weighted)', 'F1 Score (Weighted)']
+
+for i, metric in enumerate(metrics_list):
+    row_cells = table.rows[i+1].cells
+    row_cells[0].text = metric
+    row_cells[1].text = f'{metrics_no_pca[metric]:.4f}'
+    row_cells[2].text = f'{metrics_pca[metric]:.4f}'
+
+doc.add_paragraph()
+
+# 5. Feature Importance
+doc.add_heading('5. Feature Importance Analysis', level=1)
+doc.add_paragraph('Feature importance from Random Forest (Without PCA):')
+
+table_fi = doc.add_table(rows=len(feature_cols)+1, cols=2)
+table_fi.style = 'Table Grid'
+table_fi.rows[0].cells[0].text = 'Feature'
+table_fi.rows[0].cells[1].text = 'Importance'
+
+for i, row in feature_importance_no_pca.iterrows():
+    table_fi.rows[i+1].cells[0].text = row['Feature']
+    table_fi.rows[i+1].cells[1].text = f'{row["Importance"]:.4f}'
+
+doc.add_paragraph()
+
+doc.add_paragraph('\nKey Insights:')
+top_feature = feature_importance_no_pca.iloc[0]['Feature']
+top_importance = feature_importance_no_pca.iloc[0]['Importance']
+doc.add_paragraph(f'  - Most important feature: {top_feature} ({top_importance:.4f})', style='List Bullet')
+
+# 6. Detailed Results
+doc.add_heading('6. Detailed Results', level=1)
+
+doc.add_heading('6.1 Without PCA Model', level=2)
+doc.add_paragraph(f'Accuracy: {metrics_no_pca["Accuracy"]:.4f}')
+doc.add_paragraph(f'Confusion Matrix: TN={cm_no_pca[0,0]}, FP/ FN={cm_no_pca[0,1]+cm_no_pca[1,0]+cm_no_pca[2,0]+cm_no_pca[0,2]+cm_no_pca[1,2]+cm_no_pca[2,1]+cm_no_pca[0,2]}, TP={cm_no_pca[1,1]+cm_no_pca[2,2]}')
+
+doc.add_heading('6.2 With PCA Model', level=2)
+doc.add_paragraph(f'Accuracy: {metrics_pca["Accuracy"]:.4f}')
+doc.add_paragraph(f'Components: {pca.n_components_}, Variance: {sum(pca.explained_variance_ratio_)*100:.2f}%')
+
+# 7. Conclusion
+doc.add_heading('7. Analysis & Conclusion', level=1)
+
+accuracy_diff = metrics_no_pca['Accuracy'] - metrics_pca['Accuracy']
+doc.add_paragraph(f'Accuracy Difference: {accuracy_diff:.4f} ({accuracy_diff*100:.2f}%)')
+
+if metrics_no_pca['Accuracy'] >= metrics_pca['Accuracy']:
+    doc.add_paragraph(
+        f'The model WITHOUT PCA performs better ({metrics_no_pca["Accuracy"]*100:.2f}%) compared to WITH PCA ({metrics_pca["Accuracy"]*100:.2f}%).'
+    )
+else:
+    doc.add_paragraph(
+        f'The model WITH PCA performs better ({metrics_pca["Accuracy"]*100:.2f}%) compared to WITHOUT PCA ({metrics_no_pca["Accuracy"]*100:.2f}%).'
+    )
+
+doc.add_paragraph('\nConclusions:')
+doc.add_paragraph(f'  - Original features: {len(feature_cols)}', style='List Bullet')
+doc.add_paragraph(f'  - PCA components: {pca.n_components_}', style='List Bullet')
+doc.add_paragraph(f'  - Variance retained: {sum(pca.explained_variance_ratio_)*100:.2f}%', style='List Bullet')
+doc.add_paragraph(f'  - Best performing model: {"Without PCA" if metrics_no_pca["Accuracy"] > metrics_pca["Accuracy"] else "With PCA"}', style='List Bullet')
+
+# 8. Visualizations
+doc.add_heading('8. Visualizations', level=1)
+doc.add_picture(os.path.join(output_dir, "analysis_visualization.png"), width=Inches(6))
+doc.add_picture(os.path.join(output_dir, "confusion_matrices.png"), width=Inches(6))
+
+# Save document
+doc.save(os.path.join(output_dir, "sleep_quality_forest_report.docx"))
+print(f"\nWord document saved to: {os.path.join(output_dir, 'sleep_quality_forest_report.docx')}")
+
+# =====================================================
+# SUMMARY
+# =====================================================
+print("\n" + "="*70)
+print("ANALYSIS COMPLETE!")
+print("="*70)
+print(f"\nDataset: {df_clean.shape[0]} samples")
+print(f"Classes: {list(le.classes_)}")
+print(f"\nPCA: {pca.n_components_} components, {sum(pca.explained_variance_ratio_)*100:.2f}% variance")
+print(f"\nRandom Forest Performance:")
+print(f"  Without PCA - Accuracy: {metrics_no_pca['Accuracy']:.4f}")
+print(f"  With PCA    - Accuracy: {metrics_pca['Accuracy']:.4f}")
+print(f"\nTop 3 Important Features:")
+for i, row in feature_importance_no_pca.head(3).iterrows():
+    print(f"  {row['Feature']}: {row['Importance']:.4f}")

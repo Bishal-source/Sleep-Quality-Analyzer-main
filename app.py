@@ -4,6 +4,7 @@ import pickle
 from datetime import datetime, timedelta
 import os
 import numpy as np
+from werkzeug.security import generate_password_hash, check_password_hash
 
 import matplotlib
 matplotlib.use("Agg")
@@ -15,7 +16,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from xgboost import XGBClassifier
 
 app = Flask(__name__)
-app.secret_key = "sleep_ai_secret"
+app.secret_key = os.environ.get("SECRET_KEY", "fallback_secret")
 
 # Load ML model
 model = XGBClassifier()
@@ -123,6 +124,7 @@ def register():
 
         username = request.form["username"]
         password = request.form["password"]
+        hashed_password = generate_password_hash(password)
 
         conn = sqlite3.connect("sleep.db")
 
@@ -130,7 +132,7 @@ def register():
 
             conn.execute(
                 "INSERT INTO users (username,password) VALUES (?,?)",
-                (username,password)
+                (username,hashed_password)
             )
 
             conn.commit()
@@ -138,7 +140,7 @@ def register():
 
             return redirect("/login")
 
-        except:
+        except sqlite3.IntegrityError:
 
             return render_template(
                 "register.html",
@@ -160,17 +162,16 @@ def login():
         conn = sqlite3.connect("sleep.db")
 
         user = conn.execute(
-            "SELECT * FROM users WHERE username=? AND password=?",
-            (username,password)
+            "SELECT * FROM users WHERE username=?",
+            (username,)
         ).fetchone()
 
         conn.close()
 
-        if user:
+        if user and check_password_hash(user[2], password):
 
             session["user"] = username
             return redirect("/")
-
         else:
 
             return render_template(

@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Database
+sleep.db
+
+# Model files
+*.json
+*.model
+*.pkl
+
+# VS Code
+.vscode/
+
+# Environment variables
+.env
