@@ -3,6 +3,7 @@ import sqlite3
 import pickle
 from datetime import datetime, timedelta
 import os
+import numpy as np
 
 import matplotlib
 matplotlib.use("Agg")
@@ -11,9 +12,21 @@ import matplotlib.pyplot as plt
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet
+from xgboost import XGBClassifier
 
 app = Flask(__name__)
 app.secret_key = "sleep_ai_secret"
+
+# Load ML model
+model = XGBClassifier()
+model.load_model("xgboost_model.json")
+
+with open("feature_info.pkl", "rb") as f:
+    feature_info = pickle.load(f)
+
+features = feature_info['features']
+quality_mapping = feature_info['mapping']  # {'poor': 0, 'good': 1, 'best': 2}
+reverse_mapping = {v: k for k, v in quality_mapping.items()}
 
 
 # DATABASE INIT
@@ -54,39 +67,38 @@ def init_db():
 init_db()
 
 
-# SCORE FUNCTION
+# ML PREDICTION FUNCTION
 def calculate_score(duration, stress, activity,
                     caffeine, screen,
                     spo2_before, spo2_after,
                     hr_before, hr_after):
 
-    score = 50
+    # Calculate HR change (feature used by model)
+    hr_change = hr_after - hr_before
 
-    # Duration: +7 points per hour (7-9h = optimal)
-    score += duration * 7
+    # Prepare input for ML model
+    # Features: ['Sleep Duration', 'Stress Level', 'Physical Activity',
+    #            'Caffeine Cups', 'Screen Time', 'HR_Change']
+    input_data = np.array([[duration, stress, activity, caffeine, screen, hr_change]])
 
-    # Stress: -4 points per level (0-10 scale)
-    score -= stress * 4
+    # Predict quality class: 0=poor, 1=good, 2=best
+    prediction = model.predict(input_data)[0]
 
-    # Activity: +0.3 points per minute
-    score += activity * 0.3
+    # Convert to score (0-33 = poor, 34-66 = good, 67-100 = best)
+    if prediction == 0:  # poor
+        score = np.random.randint(20, 34)
+    elif prediction == 1:  # good
+        score = np.random.randint(45, 66)
+    else:  # best
+        score = np.random.randint(70, 95)
 
-    # Caffeine: -3 points per cup
-    score -= caffeine * 3
-
-    # Screen time: -4 points per hour
-    score -= screen * 4
-
-    # SpO2: bonus if >= 95%, penalty if < 90%
+    # Also factor in SpO2 for a more personalized score
     if spo2_after >= 95:
-        score += 10
+        score = min(100, score + 5)
     elif spo2_after < 90:
-        score -= 10
+        score = max(0, score - 10)
 
-    # HR Change: small penalty for large changes
-    score -= abs(hr_after - hr_before) * 0.1
-
-    return max(0, min(100, int(score)))
+    return int(score), reverse_mapping[prediction]
 
 
 # REGISTER
@@ -357,20 +369,13 @@ def home():
                 raise ValueError(error)
             sleep_date = request.form.get("sleep_date", datetime.now().strftime("%Y-%m-%d"))
 
-            score = calculate_score(
+            # Get score and prediction from ML model
+            score, prediction = calculate_score(
                 duration,stress,activity,
                 caffeine,screen,
                 spo2_before,spo2_after,
                 hr_before,hr_after
             )
-
-            # Derive quality from score for consistency
-            if score >= 70:
-                prediction = "best"
-            elif score >= 40:
-                prediction = "good"
-            else:
-                prediction = "poor"
 
 
             conn = sqlite3.connect("sleep.db")
