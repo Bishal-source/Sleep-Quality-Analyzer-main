@@ -327,33 +327,33 @@ def home():
                 error = "Please enter valid numbers for all fields"
                 raise ValueError(error)
 
-            # Range validation
-            if not (0 <= duration <= 24):
-                error = "Duration must be between 0 and 24 hours"
+            # Range validation (realistic limits)
+            if not (0 < duration <= 14):
+                error = "Duration must be between 0 and 14 hours (realistic maximum)"
                 raise ValueError(error)
             if not (0 <= stress <= 10):
                 error = "Stress level must be between 0 and 10"
                 raise ValueError(error)
-            if not (0 <= activity <= 300):
-                error = "Activity must be between 0 and 300 minutes"
+            if not (0 <= activity <= 180):
+                error = "Activity must be between 0 and 180 minutes (max 3 hours)"
                 raise ValueError(error)
             if not (0 <= caffeine <= 10):
                 error = "Caffeine must be between 0 and 10 cups"
                 raise ValueError(error)
-            if not (0.5 <= screen <= 12):
-                error = "Screen time must be between 0.5 and 12 hours"
+            if not (0 <= screen <= 10):
+                error = "Screen time must be between 0 and 10 hours"
                 raise ValueError(error)
-            if not (70 <= spo2_before <= 100):
-                error = "SpO2 before must be between 70 and 100%"
+            if not (85 <= spo2_before <= 100):
+                error = "SpO2 before must be between 85 and 100%"
                 raise ValueError(error)
-            if not (70 <= spo2_after <= 100):
-                error = "SpO2 after must be between 70 and 100%"
+            if not (85 <= spo2_after <= 100):
+                error = "SpO2 after must be between 85 and 100%"
                 raise ValueError(error)
-            if not (40 <= hr_before <= 180):
-                error = "Heart rate before must be between 40 and 180 bpm"
+            if not (50 <= hr_before <= 150):
+                error = "Heart rate before must be between 50 and 150 bpm (normal range)"
                 raise ValueError(error)
-            if not (40 <= hr_after <= 180):
-                error = "Heart rate after must be between 40 and 180 bpm"
+            if not (50 <= hr_after <= 150):
+                error = "Heart rate after must be between 50 and 150 bpm (normal range)"
                 raise ValueError(error)
             sleep_date = request.form.get("sleep_date", datetime.now().strftime("%Y-%m-%d"))
 
