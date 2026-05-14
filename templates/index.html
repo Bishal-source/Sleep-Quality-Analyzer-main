@@ -297,34 +297,76 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 
 <script>
-document.getElementById("sleepDate").value = new Date().toISOString().split("T")[0]; function showLoading() {
-    // Client-side validation
+document.getElementById("sleepDate").value = new Date().toISOString().split("T")[0]; function clearErrors() {
+    document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+    document.querySelectorAll('.form-control').forEach(el => el.classList.remove('is-invalid'));
+}
+
+function showLoading() {
+    clearErrors();
+    
     const form = document.querySelector('#analyzerModal form');
     const duration = parseFloat(form.duration.value);
+    const stress = parseFloat(form.stress.value);
     const activity = parseFloat(form.activity.value);
+    const caffeine = parseFloat(form.caffeine.value);
+    const screen = parseFloat(form.screen.value);
     const hrBefore = parseFloat(form.hr_before.value);
     const hrAfter = parseFloat(form.hr_after.value);
     const spo2Before = parseFloat(form.spo2_before.value);
     const spo2After = parseFloat(form.spo2_after.value);
-    const screen = parseFloat(form.screen.value);
 
     let hasError = false;
-    let errorMessage = "";
 
-    if (duration > 14) { errorMessage = "Duration must be 0-14 hours (realistic maximum)"; form.duration.focus(); hasError = true; }
-    else if (activity > 180) { errorMessage = "Activity must be 0-180 minutes (max 3 hours)"; form.activity.focus(); hasError = true; }
-    else if (hrBefore < 50 || hrBefore > 150) { errorMessage = "Heart rate must be 50-150 bpm (normal range)"; form.hr_before.focus(); hasError = true; }
-    else if (hrAfter < 50 || hrAfter > 150) { errorMessage = "Heart rate must be 50-150 bpm (normal range)"; form.hr_after.focus(); hasError = true; }
-    else if (spo2Before < 85 || spo2Before > 100) { errorMessage = "SpO2 must be 85-100%"; form.spo2_before.focus(); hasError = true; }
-    else if (spo2After < 85 || spo2After > 100) { errorMessage = "SpO2 must be 85-100%"; form.spo2_after.focus(); hasError = true; }
-    else if (screen > 10) { errorMessage = "Screen time must be 0-10 hours"; form.screen.focus(); hasError = true; }
-
-    if (hasError) {
-        alert(errorMessage);
-        return false;
+    if (!duration || duration <= 0 || duration > 14) {
+        document.getElementById('duration-error').textContent = 'Duration must be between 0 and 14 hours';
+        form.duration.classList.add('is-invalid');
+        hasError = true;
+    }
+    if (stress < 0 || stress > 10) {
+        document.getElementById('stress-error').textContent = 'Stress level must be between 0 and 10';
+        form.stress.classList.add('is-invalid');
+        hasError = true;
+    }
+    if (activity < 0 || activity > 180) {
+        document.getElementById('activity-error').textContent = 'Activity must be between 0 and 180 minutes';
+        form.activity.classList.add('is-invalid');
+        hasError = true;
+    }
+    if (caffeine < 0 || caffeine > 10) {
+        document.getElementById('caffeine-error').textContent = 'Caffeine must be between 0 and 10 cups';
+        form.caffeine.classList.add('is-invalid');
+        hasError = true;
+    }
+    if (screen < 0 || screen > 10) {
+        document.getElementById('screen-error').textContent = 'Screen time must be between 0 and 10 hours';
+        form.screen.classList.add('is-invalid');
+        hasError = true;
+    }
+    if (hrBefore < 50 || hrBefore > 150) {
+        document.getElementById('hr_before-error').textContent = 'Heart rate must be between 50 and 150 bpm';
+        form.hr_before.classList.add('is-invalid');
+        hasError = true;
+    }
+    if (hrAfter < 50 || hrAfter > 150) {
+        document.getElementById('hr_after-error').textContent = 'Heart rate must be between 50 and 150 bpm';
+        form.hr_after.classList.add('is-invalid');
+        hasError = true;
+    }
+    if (spo2Before < 85 || spo2Before > 100) {
+        document.getElementById('spo2_before-error').textContent = 'SpO2 must be between 85 and 100%';
+        form.spo2_before.classList.add('is-invalid');
+        hasError = true;
+    }
+    if (spo2After < 85 || spo2After > 100) {
+        document.getElementById('spo2_after-error').textContent = 'SpO2 must be between 85 and 100%';
+        form.spo2_after.classList.add('is-invalid');
+        hasError = true;
     }
 
-    document.getElementById("loadingBox").style.display = "block";
+    if (hasError) return false;
+
+    document.getElementById('loadingBox').style.display = 'block';
 }
 
 // Auto-open report modal when there's a report

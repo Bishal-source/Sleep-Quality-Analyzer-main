@@ -73,30 +73,44 @@ def calculate_score(duration, stress, activity,
                     spo2_before, spo2_after,
                     hr_before, hr_after):
 
-    # Calculate HR change (feature used by model)
+    # Calculate HR change
     hr_change = hr_after - hr_before
 
     # Prepare input for ML model
-    # Features: ['Sleep Duration', 'Stress Level', 'Physical Activity',
-    #            'Caffeine Cups', 'Screen Time', 'HR_Change']
-    input_data = np.array([[duration, stress, activity, caffeine, screen, hr_change]])
+    input_data = np.array([[
+        duration,
+        stress,
+        activity,
+        caffeine,
+        screen,
+        hr_change
+    ]])
 
-    # Predict quality class: 0=poor, 1=good, 2=best
+    # Predict sleep quality class
     prediction = model.predict(input_data)[0]
 
-    # Convert to score (0-33 = poor, 34-66 = good, 67-100 = best)
-    if prediction == 0:  # poor
-        score = np.random.randint(20, 34)
-    elif prediction == 1:  # good
-        score = np.random.randint(45, 66)
-    else:  # best
-        score = np.random.randint(70, 95)
+    # Predict probabilities
+    probabilities = model.predict_proba(input_data)[0]
 
-    # Also factor in SpO2 for a more personalized score
-    if spo2_after >= 95:
-        score = min(100, score + 5)
-    elif spo2_after < 90:
-        score = max(0, score - 10)
+    poor_prob = probabilities[0]
+    good_prob = probabilities[1]
+    best_prob = probabilities[2]
+
+    # Stable weighted score
+    score = (
+        poor_prob * 25 +
+        good_prob * 60 +
+        best_prob * 95
+    )
+
+    # Optional SpO2 adjustment
+    if spo2_after >= 98:
+        score += 3
+    elif spo2_after < 92:
+        score -= 5
+
+    # Keep score between 0 and 100
+    score = max(0, min(100, round(score)))
 
     return int(score), reverse_mapping[prediction]
 
